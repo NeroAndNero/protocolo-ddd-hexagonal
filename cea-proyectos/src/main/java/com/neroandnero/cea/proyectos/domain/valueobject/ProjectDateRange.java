@@ -1,13 +1,21 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Record.java to edit this template
- */
 package com.neroandnero.cea.proyectos.domain.valueobject;
 
-/**
- *
- * @author ASUS
- */
-public record ProjectDateRange() {
+import java.time.LocalDate;
 
+public record ProjectDateRange(LocalDate startDate, LocalDate endDate) {
+    
+    // Constructor con validación (invariante)
+    public ProjectDateRange {
+        if (startDate == null) {
+            throw new IllegalArgumentException("La fecha de inicio es obligatoria");
+        }
+        if (endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("La fecha de fin no puede ser anterior a la fecha de inicio");
+        }
+    }
+    
+    // Método para actualizar la fecha de fin manteniendo la de inicio
+    public ProjectDateRange withEndDate(LocalDate newEndDate) {
+        return new ProjectDateRange(this.startDate, newEndDate);
+    }
 }
