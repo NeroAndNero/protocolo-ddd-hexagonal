@@ -1,17 +1,24 @@
 package com.cea.emisoras.domain.model;
 
+import com.cea.emisoras.domain.exception.ConsorcioInvalidoException;
 import com.cea.emisoras.domain.exception.DatoInvalidoException;
 import com.cea.emisoras.domain.exception.ProgramaIncompletoException;
 import com.cea.emisoras.domain.exception.ProgramaResumenInvalidoException;
+import com.cea.emisoras.domain.exception.TipoProduccionInvalidaException;
 import com.cea.emisoras.domain.valueobject.Asignacion;
+import com.cea.emisoras.domain.valueobject.Consorcio;
 import com.cea.emisoras.domain.valueobject.Genero;
 import com.cea.emisoras.domain.valueobject.NombrePrograma;
 import com.cea.emisoras.domain.valueobject.PersonaId;
 import com.cea.emisoras.domain.valueobject.ProgramaId;
 import com.cea.emisoras.domain.valueobject.RolPersonal;
+import com.cea.emisoras.domain.valueobject.TipoProduccion;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 public class Programa {
@@ -22,6 +29,8 @@ public class Programa {
     private final boolean resumen;
     private final Set<ProgramaId> origenes;
     private Set<Asignacion> asignaciones;
+    private Consorcio consorcio;
+    private final Map<PersonaId, TipoProduccion> tiposProduccion = new LinkedHashMap<>();
 
     public Programa(ProgramaId id, NombrePrograma nombre, Genero genero, boolean resumen,
                     Set<ProgramaId> origenes, Set<Asignacion> asignaciones) {
@@ -49,6 +58,38 @@ public class Programa {
         restantes.remove(new Asignacion(persona, rol));
         asegurarEquipoCompleto(restantes);
         this.asignaciones = restantes;
+        if (rol == RolPersonal.PRODUCTOR) {
+            tiposProduccion.remove(persona);
+        }
+    }
+
+    public void conformarConsorcio(Consorcio nuevoConsorcio) {
+        if (nuevoConsorcio == null) {
+            throw new DatoInvalidoException("El consorcio es obligatorio.");
+        }
+        if (consorcio != null) {
+            throw new ConsorcioInvalidoException("El programa ya tiene un consorcio de producción.");
+        }
+        this.consorcio = nuevoConsorcio;
+    }
+
+    public void definirTipoProduccion(PersonaId productor, TipoProduccion tipo) {
+        if (productor == null || tipo == null) {
+            throw new DatoInvalidoException("El productor y el tipo de producción son obligatorios.");
+        }
+        if (!asignaciones.contains(new Asignacion(productor, RolPersonal.PRODUCTOR))) {
+            throw new TipoProduccionInvalidaException(
+                    "Solo un productor asignado al programa puede tener tipo de producción.");
+        }
+        tiposProduccion.put(productor, tipo);
+    }
+
+    public Optional<Consorcio> consorcio() {
+        return Optional.ofNullable(consorcio);
+    }
+
+    public Optional<TipoProduccion> tipoProduccionDe(PersonaId productor) {
+        return Optional.ofNullable(tiposProduccion.get(productor));
     }
 
     public boolean tieneRol(RolPersonal rol) {
